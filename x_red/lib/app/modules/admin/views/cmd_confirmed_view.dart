@@ -28,7 +28,7 @@ class _CustomerCMDSConfirmedViewState extends State<CustomerCMDSConfirmedView> {
   Widget build(BuildContext context) {
     return Obx(() {
       if (cnt.loaded.value) {
-        cnt.customersHasCmdConfirmed.listen((event) {
+        cnt.getCustomerHasCmdConfirmed.listen((event) {
           cnt.customersHasCmd.value = event;
         });
         return StreamBuilder<List<Customer>>(

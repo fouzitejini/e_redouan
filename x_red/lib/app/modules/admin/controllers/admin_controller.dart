@@ -223,12 +223,9 @@ class AdminController extends GetxController {
   final loaded = false.obs;
   final error = false.obs;
   final customerData = CustomerCommandes();
-  final customers = <Customer>[].obs;
-  final customersHasCmd = <Customer>[].obs;
-  final customersHasCmdConfirmed = <Customer>[].obs;
-  final customersHasCmdLivred = <Customer>[].obs;
-  final customersHasCmdCanceled = <Customer>[].obs;
+  final customersU = <Customer>[].obs;
   final company = Company().obs;
+  final customersHasCmd = <Customer>[].obs;
   final cmds = <Commandes>[].obs;
   final actifCmds = <Commandes>[].obs;
   final ligneCmdB = <LigneCmd>[].obs;
@@ -250,30 +247,8 @@ class AdminController extends GetxController {
   Future<void> loadData() async {
     await customerData.readCustomers.then(
       (value) {
-        customers.value = value;
+        customersU.value = value;
         initDataCmd();
-      },
-    );
-    await customerData.readNewAllCustomersHasCmd.then(
-      (value) {
-        customersHasCmd.value = value;
-        initDataCmdConfirmed();
-      },
-    );await customerData.readNewAllCustomersHasCmdConfirmed.then(
-      (value) {
-        customersHasCmdConfirmed.value = value;
-        initDataCmdConfirmedByAdmin();
-      },
-    );await customerData.readNewAllCustomersHasCmdLivred.then(
-      (value) {
-        customersHasCmdLivred.value = value;
-        initDataCmdLivred();
-      },
-    );
-    await customerData.readNewAllCustomersHasCmdCanceled.then(
-      (value) {
-        customersHasCmdCanceled.value = value;
-        initDataCmdCanceled();
       },
     );
     checkSession();
@@ -283,50 +258,16 @@ class AdminController extends GetxController {
       return products.value = value;
     }).whenComplete(() => null);
 
-   
-   
-  }
-Stream<List<Customer>> get getCustomerHasCmdConfirmed async* {
-    List<Customer> cusos = [];
-    customersHasCmdConfirmed.forEach((element) {
-     
-        cusos.add(element);
-      
+    getCustomerHasCmdConfirmed.listen((event) {
+      actifCmds.clear();
+      event.forEach((element) {
+        actifCmds.addAll(element.cartData!.where((element) =>
+            element.livred == false &&
+            element.canceled == false &&
+            element.confiremdByAdmin == true &&
+            element.confirmed == true));
+      });
     });
-    yield cusos;
-  }
-  Stream<List<Customer>> get getCustomerHasCmdLivred async* {
-    List<Customer> cusos = [];
-    customersHasCmdLivred.forEach((element) {
-        cusos.add(element);
-    });
-    yield cusos;
-  }Stream<List<Customer>> get getCustomer async* {
-    List<Customer> cusos = [];
-    customers.forEach((element) {
-     
-        cusos.add(element);
-      
-    });
-    yield cusos;
-  }Stream<List<Customer>> get getCustomerHasCmd async* {
-    List<Customer> cusos = [];
-    customersHasCmd.forEach((element) {
-     
-        cusos.add(element);
-      
-    });
-    yield cusos;
-  }
-
-  Stream<List<Customer>> get getCustomerHasCmdCanceled async* {
-    List<Customer> cusos = [];
-    customersHasCmdCanceled.forEach((element) {
-     
-        cusos.add(element);
-      
-    });
-    yield cusos;
   }
 
   void load() async {
@@ -356,12 +297,44 @@ Stream<List<Customer>> get getCustomerHasCmdConfirmed async* {
     super.onInit();
   }
 
- 
+  Stream<List<Customer>> get getCustomer async* {
+    yield customersU;
+  }
 
- 
-   
+  Stream<List<Customer>> get getCustomerHasCmd async* {
+    List<Customer> cusos = [];
+    customersU.forEach((element) {
+      if (element.cartData!
+          .where((element) =>
+              element.livred == false &&
+              element.canceled == false &&
+              element.closed == false &&
+              element.confiremdByAdmin == false &&
+              element.confirmed == true)
+          .isNotEmpty) {
+        cusos.add(element);
+      }
+    });
+    yield cusos;
+  }
 
-  
+  Stream<List<Customer>> get getCustomerHasCmdConfirmed async* {
+    List<Customer> cusos = [];
+    customersU.forEach((element) {
+      if (element.cartData!
+          .where((element) =>
+              element.livred == false &&
+              element.canceled == false &&
+              element.closed == false &&
+              element.confiremdByAdmin == true &&
+              element.confirmed == true)
+          .isNotEmpty) {
+        cusos.add(element);
+      }
+    });
+    yield cusos;
+  }
+
   List<LigneCmd> cartProducts(List<LigneCmd> items) {
     List<LigneCmd> productsL = [];
 
@@ -935,8 +908,8 @@ Stream<List<Customer>> get getCustomerHasCmdConfirmed async* {
   Stream<List<LigneCmd>> initDataCmd() async* {
     ligneCmdB.clear();
 
-    customers.listen((p0) {});
-    for (var element in customers) {
+    customersU.listen((p0) {});
+    for (var element in customersU) {
       for (var e
           in element.cartData!.where((element) => element.livred == true)) {
         ligneCmdB.addAll(e.cart!);
@@ -952,91 +925,10 @@ Stream<List<Customer>> get getCustomerHasCmdConfirmed async* {
     yield x;
   }
 
-   Stream<List<LigneCmd>> initDataCmdConfirmed() async* {
-    ligneCmdB.clear();
-
-    customersHasCmdConfirmed.listen((p0) {});
-    for (var element in customersHasCmdConfirmed) {
-      for (var e
-          in element.cartData!) {
-        ligneCmdB.addAll(e.cart!);
-      }
-    }
-
-    x.value = cartProducts(ligneCmdB).take(10).toList();
-
-    x.sort((a, b) => a.qte!.compareTo(b.qte!));
-    if (x.isNotEmpty) {
-      maxQte.value = x.last.qte!;
-    }
-    yield x;
-  }
-  
-   Stream<List<LigneCmd>> initDataCmdConfirmedByAdmin() async* {
-    ligneCmdB.clear();
-
-    customersHasCmdConfirmed.listen((p0) {});
-    for (var element in customersHasCmdConfirmed) {
-      for (var e
-          in element.cartData!) {
-        ligneCmdB.addAll(e.cart!);
-      }
-    }
-
-    x.value = cartProducts(ligneCmdB).take(10).toList();
-
-    x.sort((a, b) => a.qte!.compareTo(b.qte!));
-    if (x.isNotEmpty) {
-      maxQte.value = x.last.qte!;
-    }
-    yield x;
-  }
-
-     Stream<List<LigneCmd>> initDataCmdLivred() async* {
-    ligneCmdB.clear();
-
-    customersHasCmdLivred.listen((p0) {});
-    for (var element in customersHasCmdConfirmed) {
-      for (var e
-          in element.cartData!) {
-        ligneCmdB.addAll(e.cart!);
-      }
-    }
-
-    x.value = cartProducts(ligneCmdB).take(10).toList();
-
-    x.sort((a, b) => a.qte!.compareTo(b.qte!));
-    if (x.isNotEmpty) {
-      maxQte.value = x.last.qte!;
-    }
-    yield x;
-  }
-  
-    Stream<List<LigneCmd>> initDataCmdCanceled() async* {
-    ligneCmdB.clear();
-
-    customersHasCmdCanceled.listen((p0) {});
-    for (var element in customersHasCmdConfirmed) {
-      for (var e
-          in element.cartData!) {
-        ligneCmdB.addAll(e.cart!);
-      }
-    }
-
-    x.value = cartProducts(ligneCmdB).take(10).toList();
-
-    x.sort((a, b) => a.qte!.compareTo(b.qte!));
-    if (x.isNotEmpty) {
-      maxQte.value = x.last.qte!;
-    }
-    yield x;
-  }
- 
-
   Stream<List<LigneCmd>> initDataCmdEarning() async* {
     ligneCmdB.clear();
-    customers.listen((p0) {});
-    for (var element in customers) {
+    customersU.listen((p0) {});
+    for (var element in customersU) {
       for (var e
           in element.cartData!.where((element) => element.livred == true)) {
         ligneCmdB.addAll(e.cart!);
